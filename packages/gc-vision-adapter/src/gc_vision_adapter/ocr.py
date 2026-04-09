@@ -9,41 +9,33 @@ from google.cloud import storage
 from google.cloud import vision
 
 
-# PROJECT_ID = "vie-ocr"
-# BUCKET_NAME = "vie-doc"
-# RESOURCE_PREFIX = "thanh-nghi/images"
-# OUTPUT_URI = "gs://vie-doc/thanh-nghi/ocr-outputs"
-
-
-# LANGUAGE_HINTS = ['vi']
-
-# INPUT_BATCHSIZE = 100
-# OUTPUT_BATCHSIZE = 20
-# TIMEOUT_PER_BATCH = 900
+DEFAULT_OCR_INPUT_EXTS = ('png', 'jpg', 'jpeg', 'tiff', 'tif')
+DEFAULT_OCR_INPUT_BATCHSIZE = 100
+DEFAULT_OCR_OUTPUT_BATCHSIZE = 20
+DEFAULT_OCR_SECONDS_TIMEOUT_PER_BATCH = 900
 
 
 @dataclass
 class RunBatchOcrCommand:
-    input_bucket_name: str
-    input_file_prefix: str
-    output_bucket_name: str
-    output_dir: str
+    input_bucket_name: str = ""
+    input_file_prefix: str = ""
+    input_file_exts: tuple[str, ...] = DEFAULT_OCR_INPUT_EXTS
+    input_batchsize: int = DEFAULT_OCR_INPUT_BATCHSIZE
+    output_bucket_name: str = ""
+    output_dir: str = ""
+    output_batchsize: int = DEFAULT_OCR_OUTPUT_BATCHSIZE
     language_hints: Sequence[str] = ()
-    input_batchsize: int = 100
-    output_batchsize: int = 20
-    sec_timeout_per_input_batch: int = 900
+    seconds_timeout_per_batch: int = DEFAULT_OCR_SECONDS_TIMEOUT_PER_BATCH
 
 
 class OcrService:
-    _IMG_EXTENSIONS = ('png', 'jpg', 'jpeg', 'tiff', 'tif')
     _logger = None
 
-    def __init__(self, project_id: str, accepted_extensions: Sequence[str] = _IMG_EXTENSIONS):
+    def __init__(self, project_id: str):
         if OcrService._logger is None:
             logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
             OcrService._logger = logging.getLogger(self.__class__.__name__)
 
-        self._accepted_extensions = accepted_extensions
         self._storage_client = storage.Client(project=project_id)
         self._vision_client = vision.ImageAnnotatorClient(
             client_options=ClientOptions(quota_project_id=project_id)
@@ -54,15 +46,15 @@ class OcrService:
         image_uris = (
             f"gs://{cmd.input_bucket_name}/{blob.name}"
             for blob in blobs
-            if len(self._accepted_extensions) == 0 or
-                blob.name.lower().endswith(self._accepted_extensions)
+            if not cmd.input_file_exts or
+                blob.name.lower().endswith(cmd.input_file_exts)
         )
 
         # Phase 1: submit all batches without blocking
         output_uri = f"gs://{cmd.output_bucket_name}/{cmd.output_dir}".rstrip("/")
         ocr_ops: list[tuple[int, operation.Operation]] = [
             (i, self._submit_ocr_batch(i, chunk, output_uri, cmd.output_batchsize, cmd.language_hints))
-            for i, chunk in enumerate(itertools.zip_longest(image_uris, image_uris))
+            for i, chunk in enumerate(itertools.batched(image_uris, cmd.input_batchsize))
         ]
         self._logger.info(f"All {len(ocr_ops)} batches submitted ({len(ocr_ops)} images total). Waiting...")
 
@@ -71,7 +63,7 @@ class OcrService:
 
         for i, ocr_op in ocr_ops:
             try:
-                ocr_op.result(timeout=cmd.sec_timeout_per_input_batch)
+                ocr_op.result(timeout=cmd.seconds_timeout_per_batch)
                 self._logger.info(f"Batch {i} completed")
             except Exception as e:
                 self._logger.error(f"Batch {i} failed: {e}")

@@ -8,5 +8,5 @@ dependencies = []
 [tool.uv.workspace]
 members = [
     "packages/gc-vision-adapter",
-    "packages/vie-doc-ingest-cli",
+    "packages/vie-doc-ingest-cli"
 ]
