@@ -12,7 +12,7 @@ from google.cloud import vision
 DEFAULT_OCR_INPUT_EXTS = ('png', 'jpg', 'jpeg', 'tiff', 'tif')
 DEFAULT_OCR_INPUT_BATCHSIZE = 100
 DEFAULT_OCR_OUTPUT_BATCHSIZE = 20
-DEFAULT_OCR_SECONDS_TIMEOUT_PER_BATCH = 900
+DEFAULT_OCR_BATCH_PROCESS_TIMEOUT_SECONDS = 900
 
 
 @dataclass
@@ -25,7 +25,7 @@ class RunBatchOcrCommand:
     output_dir: str = ""
     output_batchsize: int = DEFAULT_OCR_OUTPUT_BATCHSIZE
     language_hints: Sequence[str] = ()
-    seconds_timeout_per_batch: int = DEFAULT_OCR_SECONDS_TIMEOUT_PER_BATCH
+    batch_process_timeout_seconds: int = DEFAULT_OCR_BATCH_PROCESS_TIMEOUT_SECONDS
 
 
 class OcrService:
@@ -63,7 +63,7 @@ class OcrService:
 
         for i, ocr_op in ocr_ops:
             try:
-                ocr_op.result(timeout=cmd.seconds_timeout_per_batch)
+                ocr_op.result(timeout=cmd.batch_process_timeout_seconds)
                 self._logger.info(f"Batch {i} completed")
             except Exception as e:
                 self._logger.error(f"Batch {i} failed: {e}")

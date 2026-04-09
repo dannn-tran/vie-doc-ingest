@@ -3,7 +3,7 @@ from typing import Annotated
 import typer
 
 from gc_vision_adapter.ocr import DEFAULT_OCR_INPUT_BATCHSIZE, DEFAULT_OCR_OUTPUT_BATCHSIZE, \
-    DEFAULT_OCR_SECONDS_TIMEOUT_PER_BATCH, OcrService, RunBatchOcrCommand
+    DEFAULT_OCR_BATCH_PROCESS_TIMEOUT_SECONDS, OcrService, RunBatchOcrCommand
 from vie_doc_ingest_cli.validated import Validated
 
 
@@ -17,7 +17,7 @@ def main(
     output_dir: Annotated[str, typer.Option()],
     output_batchsize: Annotated[int, typer.Option(DEFAULT_OCR_OUTPUT_BATCHSIZE)],
     language_hints: Annotated[str, typer.Option("")],
-    seconds_timeout_per_batch: Annotated[int, typer.Option(DEFAULT_OCR_SECONDS_TIMEOUT_PER_BATCH)]
+    batch_process_timeout_seconds: Annotated[int, typer.Option(DEFAULT_OCR_BATCH_PROCESS_TIMEOUT_SECONDS)]
 ):
     validated_input_file_exts = _validate_input_file_exts(input_file_exts)
     if not validated_input_file_exts.is_valid:
@@ -32,7 +32,7 @@ def main(
         output_dir=output_dir,
         output_batchsize=output_batchsize,
         language_hints=language_hints,
-        seconds_timeout_per_batch=seconds_timeout_per_batch
+        batch_process_timeout_seconds=batch_process_timeout_seconds
     )
 
     OcrService(project_id).batch_ocr(cmd)
