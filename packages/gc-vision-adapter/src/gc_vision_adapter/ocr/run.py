@@ -15,26 +15,26 @@ DEFAULT_OCR_OUTPUT_BATCHSIZE = 20
 DEFAULT_OCR_BATCH_PROCESS_TIMEOUT_SECONDS = 900
 
 
-@dataclass
+@dataclass(frozen=True)
 class RunBatchOcrCommand:
-    input_bucket_name: str = ""
+    input_bucket: str = ""
     input_file_prefix: str = ""
     input_file_exts: tuple[str, ...] = DEFAULT_OCR_INPUT_EXTS
     input_batchsize: int = DEFAULT_OCR_INPUT_BATCHSIZE
-    output_bucket_name: str = ""
+    output_bucket: str = ""
     output_dir: str = ""
     output_batchsize: int = DEFAULT_OCR_OUTPUT_BATCHSIZE
     language_hints: Sequence[str] = ()
     batch_process_timeout_seconds: int = DEFAULT_OCR_BATCH_PROCESS_TIMEOUT_SECONDS
 
 
-class OcrService:
+class OcrRunner:
     _logger = None
 
     def __init__(self, project_id: str):
-        if OcrService._logger is None:
+        if OcrRunner._logger is None:
             logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-            OcrService._logger = logging.getLogger(self.__class__.__name__)
+            OcrRunner._logger = logging.getLogger(self.__class__.__name__)
 
         self._storage_client = storage.Client(project=project_id)
         self._vision_client = vision.ImageAnnotatorClient(
@@ -42,16 +42,16 @@ class OcrService:
         )
 
     def batch_ocr(self, cmd: RunBatchOcrCommand):
-        blobs = self._storage_client.list_blobs(cmd.input_bucket_name, prefix=cmd.input_file_prefix)
+        blobs = self._storage_client.list_blobs(cmd.input_bucket, prefix=cmd.input_file_prefix)
         image_uris = (
-            f"gs://{cmd.input_bucket_name}/{blob.name}"
+            f"gs://{cmd.input_bucket}/{blob.name}"
             for blob in blobs
             if not cmd.input_file_exts or
                 blob.name.lower().endswith(cmd.input_file_exts)
         )
 
         # Phase 1: submit all batches without blocking
-        output_uri = f"gs://{cmd.output_bucket_name}/{cmd.output_dir}".rstrip("/")
+        output_uri = f"gs://{cmd.output_bucket}/{cmd.output_dir}".rstrip("/")
         ocr_ops: list[tuple[int, operation.Operation]] = [
             (i, self._submit_ocr_batch(i, chunk, output_uri, cmd.output_batchsize, cmd.language_hints))
             for i, chunk in enumerate(itertools.batched(image_uris, cmd.input_batchsize))
