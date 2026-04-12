@@ -1,0 +1,20 @@
+[project]
+name = "vie-doc-ingest"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "typer",
+    "gc-vision-adapter",
+    "vie-doc-data"
+]
+
+[tool.uv.sources]
+gc-vision-adapter = { workspace = true }
+vie-doc-data = { workspace = true }
+
+[tool.uv.workspace]
+members = [
+    "packages/gc-vision-adapter",
+    "packages/vie-doc-ingest-cli",
+    "packages/vie-doc-data",
+]
