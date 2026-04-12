@@ -1,4 +1,17 @@
-# Pipeline
+# Vietnamese Print Publication Index
+
+## Public-facing features
+
+- Explore by periodicals
+- Search by keywords
+- Filter by publication date range
+- Explore by writers
+
+## Admin features
+- Review AI annotations
+
+
+## Pipeline
 - OCR inference: run Google Vision API in batches and save results to GCS.
   - Inference outputs are archived for future needs e.g. re-run the entire post-processing and enrichment pipeline.
   - May wanna record inference timestamp and input arguments.
