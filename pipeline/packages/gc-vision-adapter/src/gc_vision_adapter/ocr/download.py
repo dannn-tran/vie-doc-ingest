@@ -23,31 +23,28 @@ def download_ocr(project_id: str, cmd: DownloadOcrResultToLocalCommand):
 
     dst_dirpath = Path(cmd.dst_dirpath)
 
-    download_one = _make_download_one(dst_dirpath)
     blobs = storage_client.list_blobs(cmd.src_bucket, prefix=cmd.src_file_prefix)
 
     if cmd.workers < 2:
         for b in blobs:
-            download_one(b)
+            _download_one(dst_dirpath, b)
         return
 
     with ThreadPoolExecutor(max_workers=cmd.workers) as executor:
-        for _ in executor.map(download_one, blobs):
+        for _ in executor.map(lambda b: _download_one(dst_dirpath, b), blobs):
             pass
 
-def _make_download_one(dst_dirpath: Path):
-    def download_one(blob: storage.Blob):
-        if not blob.name.endswith('.json'):
-            return
-        # TODO: skip download if file already downloaded
-        for uri, resp in _explode(blob):
-            p = PurePosixPath(uri)
-            dst_dirpath.mkdir(parents=True, exist_ok=True)
-            dst = dst_dirpath / f"{p.stem}.json"
-            with open(dst, "w") as f:
-                json.dump(resp, f)
-            logger.info(f"Written {dst}.")
-    return download_one
+def _download_one(dst_dirpath: Path, blob: storage.Blob):
+    if not blob.name.endswith('.json'):
+        return
+    # TODO: skip download if file already downloaded
+    for uri, resp in _explode(blob):
+        p = PurePosixPath(uri)
+        dst_dirpath.mkdir(parents=True, exist_ok=True)
+        dst = dst_dirpath / f"{p.stem}.json"
+        with open(dst, "w") as f:
+            json.dump(resp, f)
+        logger.info(f"Written {dst}.")
 
 def _explode(blob: storage.Blob):
     logger.info(f"Download starting - {blob.name}...")
