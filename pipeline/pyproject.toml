@@ -1,20 +1,30 @@
 [project]
-name = "vie-doc-ingest"
+name = "vie-doc-pipeline"
 version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
     "typer",
     "gc-vision-adapter",
-    "vie-doc-data"
+    "vie-doc-data",
+    "vie-doc-enrich"
 ]
+
+[tool.uv]
+package = true
 
 [tool.uv.sources]
 gc-vision-adapter = { workspace = true }
 vie-doc-data = { workspace = true }
+vie-doc-enrich = { workspace = true }
 
 [tool.uv.workspace]
 members = [
     "packages/gc-vision-adapter",
     "packages/vie-doc-ingest-cli",
     "packages/vie-doc-data",
+    "packages/vie-doc-enrich",
 ]
+
+[project.scripts]
+run-ocr = "vie_doc_pipeline.run_ocr:app"
+download-ocr = "vie_doc_pipeline.download_ocr:app"

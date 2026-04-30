@@ -47,9 +47,8 @@ class OcrResultDownloader:
             # TODO: skip download if file already downloaded
             for uri, resp in self._explode(blob):
                 p = PurePosixPath(uri)
-                fdir = dst_dirpath / p.parent.name
-                fdir.mkdir(parents=True, exist_ok=True)
-                dst = fdir / f"{p.stem}.json"
+                dst_dirpath.mkdir(parents=True, exist_ok=True)
+                dst = dst_dirpath / f"{p.stem}.json"
                 with open(dst, "w") as f:
                     json.dump(resp, f)
                 self._logger.info(f"Written {dst}.")
