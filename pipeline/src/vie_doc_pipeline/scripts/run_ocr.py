@@ -3,9 +3,11 @@ from typing import Annotated
 import typer
 
 from gc_vision_adapter.ocr.run import DEFAULT_OCR_INPUT_BATCHSIZE, DEFAULT_OCR_OUTPUT_BATCHSIZE, \
-    DEFAULT_OCR_BATCH_PROCESS_TIMEOUT_SECONDS, OcrRunner, RunBatchOcrCommand
+    DEFAULT_OCR_BATCH_PROCESS_TIMEOUT_SECONDS, RunBatchOcrCommand, batch_ocr
 from vie_doc_data.validated import Validated
+from vie_doc_pipeline.config.logging import configure_logging
 
+configure_logging()
 app = typer.Typer()
 
 @app.command()
@@ -37,7 +39,7 @@ def main(
         batch_process_timeout_seconds=batch_process_timeout_seconds
     )
 
-    OcrRunner(project_id).batch_ocr(cmd)
+    batch_ocr(project_id, cmd)
 
 
 def _validate_input_file_exts(exts: str) -> Validated[str, tuple[str, ...]]:

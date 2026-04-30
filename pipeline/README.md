@@ -1,3 +1,9 @@
+## Development
+```sh
+uv sync
+uv pip install -e .
+```
+
 ## Example usage
 
 ```sh
